@@ -1,70 +1,81 @@
+
 import streamlit as st
 import pandas as pd
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import PyPDF2
 
-st.set_page_config(page_title="8 Lanes - Real AI", layout="wide")
+st.set_page_config(page_title="Gaurang AI Portfolio", layout="wide")
+st.title("🚀 Gaurang's AI Portfolio - 2 Projects, 1 Link")
 
-st.title("🧠 8 AI Lanes - Now With REAL AI")
-st.caption("Semantic Search + AI Advisor")
+tab1, tab2 = st.tabs(["🧠 8 Lanes - Real AI", "🎵 Raga Finder - RAG"])
 
-# --- DATA ---
-lanes = [
-    {"id":1, "name":"RAG", "desc":"Build knowledge base from PDFs, search with embeddings, answer with LLM. Your Raga Finder.", "skills":"Vector DB, Embeddings, Chunking", "money":"Low", "diff":"Medium"},
-    {"id":2, "name":"AI Apps Wrapper", "desc":"Wrap LLMs into useful tools like resume scanner, dashboard, your 8 lanes app.", "skills":"Streamlit, API, Prompting", "money":"Medium", "diff":"Low"},
-    {"id":3, "name":"Automation", "desc":"Automate emails, leads, reports using AI agents that work while you sleep.", "skills":"Make, n8n, LangChain", "money":"High", "diff":"Medium"},
-    {"id":4, "name":"Evaluation", "desc":"Test if your AI is actually good, measure accuracy, prevent hallucinations.", "skills":"RAGAS, Human eval", "money":"High", "diff":"High"},
-    {"id":5, "name":"Agentic AI", "desc":"AI agents that plan, use tools, browse, and complete complex tasks autonomously.", "skills":"CrewAI, AutoGen, Tools", "money":"Very High", "diff":"Very High"},
-    {"id":6, "name":"Voice & Video", "desc":"Voice assistants, video generation, avatars for content and calls.", "skills":"Whisper, ElevenLabs", "money":"High", "diff":"Medium"},
-    {"id":7, "name":"Fine-tuning", "desc":"Train your own small model on your own data for specific domain.", "skills":"LoRA, QLoRA", "money":"Medium", "diff":"Very High"},
-    {"id":8, "name":"AI Products", "desc":"Full SaaS product with users, payments, and scaling to $10k MRR.", "skills":"Product, Growth", "money":"Very High", "diff":"High"},
-]
-df = pd.DataFrame(lanes)
-df['text'] = df['name'] + " " + df['desc'] + " " + df['skills']
-
-# --- REAL AI 1: SEMANTIC SEARCH ---
-st.header("1. Semantic Search (Real AI, not keywords)")
-st.write("Try: 'I want to make money while sleeping' or 'help me build voice clone'")
-
-query = st.text_input("What do you want to build?")
-
-if query:
-    vectorizer = TfidfVectorizer().fit(df['text'].tolist() + [query])
-    vectors = vectorizer.transform(df['text'].tolist() + [query])
-    sims = cosine_similarity(vectors[-1], vectors[:-1])[0]
-    df['score'] = sims
-    results = df.sort_values('score', ascending=False).head(3)
+# ================= TAB 1: 8 LANES =================
+with tab1:
+    st.header("8 Lanes - Real AI Search")
+    lanes = [
+        {"id":1, "name":"RAG", "desc":"Build knowledge base from PDFs, search with embeddings, answer with LLM. Your Raga Finder.", "skills":"Vector DB, Embeddings", "money":"Low"},
+        {"id":2, "name":"AI Apps Wrapper", "desc":"Wrap LLMs into useful tools like resume scanner, dashboard, your 8 lanes app.", "skills":"Streamlit, API", "money":"Medium"},
+        {"id":3, "name":"Automation", "desc":"Automate emails, leads, reports using AI agents that work while you sleep.", "skills":"Make, n8n, LangChain", "money":"High"},
+        {"id":4, "name":"Evaluation", "desc":"Test if your AI is actually good, measure accuracy.", "skills":"RAGAS", "money":"High"},
+        {"id":5, "name":"Agentic AI", "desc":"AI agents that plan, use tools, browse, and complete tasks autonomously.", "skills":"CrewAI, AutoGen", "money":"Very High"},
+        {"id":6, "name":"Voice & Video", "desc":"Voice assistants, video generation, avatars.", "skills":"Whisper, ElevenLabs", "money":"High"},
+        {"id":7, "name":"Fine-tuning", "desc":"Train your own small model on your own data.", "skills":"LoRA", "money":"Medium"},
+        {"id":8, "name":"AI Products", "desc":"Full SaaS product with users, payments, scaling.", "skills":"Product", "money":"Very High"},
+    ]
+    df = pd.DataFrame(lanes)
+    df['text'] = df['name'] + " " + df['desc'] + " " + df['skills']
     
-    st.subheader(f"AI found {len(results)} best lanes for you:")
-    for _, r in results.iterrows():
-        st.success(f"**Lane {r['id']}: {r['name']}** (match: {r['score']:.0%}) - {r['desc']}")
-else:
-    st.dataframe(df[['id','name','desc','money','diff']], use_container_width=True)
+    query = st.text_input("What do you want to build? (Try: make money while sleeping)", key="lane_search")
+    if query:
+        vectorizer = TfidfVectorizer().fit(df['text'].tolist() + [query])
+        vectors = vectorizer.transform(df['text'].tolist() + [query])
+        sims = cosine_similarity(vectors[-1], vectors[:-1])[0]
+        df['score'] = sims
+        results = df.sort_values('score', ascending=False).head(3)
+        for _, r in results.iterrows():
+            st.success(f"**Lane {r['id']}: {r['name']}** ({r['score']:.0%} match) - {r['desc']}")
+    else:
+        st.dataframe(df[['id','name','desc','money']], use_container_width=True)
 
-# --- REAL AI 2: AI ADVISOR ---
-st.header("2. AI Advisor (Rule-based Agent)")
-goal = st.selectbox("Your current goal?", ["Learn", "Make Money Fast", "Build Portfolio", "Get Job", "Build Startup"])
+    st.divider()
+    goal = st.selectbox("Your goal?", ["Learn", "Make Money Fast", "Build Portfolio", "Get Job", "Build Startup"])
+    def advise(g):
+        if g=="Make Money Fast": return "Start Lane 3 Automation → Automate cold emails, charge $500/mo"
+        if g=="Build Portfolio": return "You have Lane 1 & 2. Add Lane 3 + 6 for strong portfolio"
+        if g=="Get Job": return "Focus Lane 1 RAG + Lane 4 Eval. Companies need accurate RAG"
+        if g=="Build Startup": return "Lane 2 → 3 → 5. Your app is Lane 2, add automation, then agents"
+        return "Master Lane 1 RAG deeply. Your Raga Finder is great start."
+    if st.button("Get My AI Plan"):
+        st.info(f"🤖 {advise(goal)}")
+        st.balloons()
 
-def advise(goal):
-    if goal == "Make Money Fast": return "Start Lane 3 Automation → Find 5 businesses, automate their cold emails with AI. Charge $500/mo. That's Lane 3. Then add Lane 4 Eval to show ROI."
-    if goal == "Build Portfolio": return "You did Lane 1 & 2. Now build Lane 3 (small automation) + Lane 6 (voice demo). 4 projects = strong portfolio."
-    if goal == "Get Job": return "Focus Lane 1 RAG + Lane 4 Evaluation. Companies pay for accurate RAG, not demos. Build eval metrics."
-    if goal == "Build Startup": return "Lane 2 → 3 → 5. Your 8 lanes app is Lane 2. Now add automation (Lane 3) for users, then agents (Lane 5)."
-    return "Master Lane 1 RAG deeply. Your Raga Finder is great start. Add 100 more PDFs, improve embeddings."
-
-if st.button("Get My AI Plan"):
-    st.info(f"🤖 Advisor: {advise(goal)}")
-    st.balloons()
-
-# --- ROADMAP ---
-st.header("3. Roadmap")
-st.graphviz_chart("""
-digraph {
- rankdir=LR;
- RAG -> AI_Apps -> Automation -> Eval -> Agentic -> Voice -> Finetune -> Products;
-}
-""")
-
-st.markdown("---")
-st.write("Lesson: Your old app showed the map. This app *understands* what you want using TF-IDF vectors + cosine similarity — that's the core of semantic search / RAG!")
+# ================= TAB 2: RAGA FINDER =================
+with tab2:
+    st.header("🎵 Raga Finder - Real RAG")
+    st.write("Upload any PDF about Ragas → Ask questions → AI finds answer using same TF-IDF RAG")
+    
+    uploaded = st.file_uploader("Upload Raga PDF", type=["pdf"])
+    
+    if uploaded:
+        reader = PyPDF2.PdfReader(uploaded)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        
+        # Chunking
+        chunks = [text[i:i+500] for i in range(0, len(text), 400)]
+        st.success(f"PDF loaded: {len(chunks)} chunks created (RAG Step 1 & 2 done)")
+        
+        q2 = st.text_input("Ask about Raga (e.g., What is Yaman raga aroha?)", key="raga_q")
+        
+        if q2 and chunks:
+            vectorizer2 = TfidfVectorizer().fit(chunks + [q2])
+            vecs = vectorizer2.transform(chunks + [q2])
+            sims2 = cosine_similarity(vecs[-1], vecs[:-1])[0]
+            best_idx = sims2.argmax()
+            st.subheader(f"Best Match (Score: {sims2[best_idx]:.0%}) - This is RAG Retrieval:")
+            st.info(chunks[best_idx][:1000])
+            st.caption("Lesson: This is exactly RAG → Chunk → Embed (TF-IDF) → Similarity Search → Show answer")
+    else:
+        st.info("Upload a PDF to activate RAG. Try any music theory PDF you have.")
