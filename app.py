@@ -1,26 +1,48 @@
+
 import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import PyPDF2
+import requests
 
-st.set_page_config(page_title="Gaurang AI Portfolio", layout="wide")
-st.title("🚀 Gaurang's AI Portfolio - 3 Projects, 1 Link")
+st.set_page_config(page_title="Gaurang AI Portfolio - Real Meta AI", layout="wide")
+st.title("🚀 Gaurang's AI Portfolio - Powered by Real Meta AI")
 
-tab1, tab2, tab3 = st.tabs(["🧠 8 Lanes AI", "🎵 Raga Finder RAG", "🎙️ Voice Search - NEW"])
+# --- REAL META AI (Llama 3.3) ---
+def call_meta_ai(prompt):
+    api_key = st.secrets.get("GROQ_API_KEY", "")
+    if not api_key:
+        return None, "Add GROQ_API_KEY in Streamlit Secrets: Manage App → Settings → Secrets → GROQ_API_KEY = \"gsk_...\""
+    try:
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        data = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7,
+            "max_tokens": 800
+        }
+        res = requests.post(url, headers=headers, json=data, timeout=30)
+        if res.status_code == 200:
+            return res.json()['choices'][0]['message']['content'], None
+        else:
+            return None, f"API Error: {res.text[:300]}"
+    except Exception as e:
+        return None, str(e)
 
+# --- DATA FOR TAB 1 & 3 ---
 lanes = [
-    {"id":1, "name":"RAG", "desc":"Build knowledge base from PDFs, search with embeddings, answer with LLM. Your Raga Finder.", "skills":"Vector DB, Embeddings", "money":"Low"},
-    {"id":2, "name":"AI Apps Wrapper", "desc":"Wrap LLMs into useful tools like resume scanner, dashboard, your 8 lanes app.", "skills":"Streamlit, API", "money":"Medium"},
+    {"id":1, "name":"RAG", "desc":"Build knowledge base from docs, search with embeddings. Your Raga Finder is this.", "skills":"Vector DB, Embeddings", "money":"Low"},
+    {"id":2, "name":"AI Apps Wrapper", "desc":"Wrap LLMs into useful tools like resume scanner, your 8 lanes app.", "skills":"Streamlit, API", "money":"Medium"},
     {"id":3, "name":"Automation", "desc":"Automate emails, leads, reports using AI agents that work while you sleep.", "skills":"Make, n8n, LangChain", "money":"High"},
-    {"id":4, "name":"Evaluation", "desc":"Test if your AI is actually good, measure accuracy.", "skills":"RAGAS", "money":"High"},
-    {"id":5, "name":"Agentic AI", "desc":"AI agents that plan, use tools, browse, and complete tasks autonomously.", "skills":"CrewAI, AutoGen", "money":"Very High"},
-    {"id":6, "name":"Voice & Video", "desc":"Voice assistants, video generation, avatars.", "skills":"Whisper, ElevenLabs", "money":"High"},
-    {"id":7, "name":"Fine-tuning", "desc":"Train your own small model on your own data.", "skills":"LoRA", "money":"Medium"},
-    {"id":8, "name":"AI Products", "desc":"Full SaaS product with users, payments, scaling.", "skills":"Product", "money":"Very High"},
+    {"id":4, "name":"Evaluation", "desc":"Test if your AI is actually good.", "skills":"RAGAS", "money":"High"},
+    {"id":5, "name":"Agentic AI", "desc":"AI agents that plan, use tools, browse.", "skills":"CrewAI", "money":"Very High"},
+    {"id":6, "name":"Voice & Video", "desc":"Voice assistants, video generation.", "skills":"Whisper, ElevenLabs", "money":"High"},
+    {"id":7, "name":"Fine-tuning", "desc":"Train your own small model.", "skills":"LoRA", "money":"Medium"},
+    {"id":8, "name":"AI Products", "desc":"Full SaaS product with users, payments.", "skills":"Product", "money":"Very High"},
 ]
 df_lanes = pd.DataFrame(lanes)
-df_lanes['text'] = df_lanes['name'] + " " + df_lanes['desc'] + " " + df_lanes['skills']
+df_lanes['text'] = df_lanes['name'] + " " + df_lanes['desc']
 
 def semantic_search(query, df):
     vectorizer = TfidfVectorizer().fit(df['text'].tolist() + [query])
@@ -29,75 +51,90 @@ def semantic_search(query, df):
     df['score'] = sims
     return df.sort_values('score', ascending=False).head(3)
 
+tab1, tab2, tab3 = st.tabs(["🧠 8 Lanes", "🎵 Raga AI (No PDF)", "🎙️ Voice + Meta AI"])
+
 # TAB 1
 with tab1:
-    st.header("8 Lanes - Real AI Search")
-    query = st.text_input("What do you want to build? (Try: make money while sleeping)", key="lane_search")
+    st.header("🧠 What Do You Want To Build?")
+    query = st.text_input("Type: make money while sleeping, voice clone, jarvis...", key="lane_search")
     if query:
         results = semantic_search(query, df_lanes.copy())
         for _, r in results.iterrows():
-            st.success(f"**Lane {r['id']}: {r['name']}** ({r['score']:.0%} match) - {r['desc']}")
-    else:
-        st.dataframe(df_lanes[['id','name','desc','money']], use_container_width=True)
-    goal = st.selectbox("Your goal?", ["Learn", "Make Money Fast", "Build Portfolio", "Get Job", "Build Startup"])
-    if st.button("Get My AI Plan"):
-        plans = {
-            "Make Money Fast": "Start Lane 3 Automation → Automate cold emails, charge $500/mo",
-            "Build Portfolio": "You have Lane 1 & 2. Add Lane 3 + 6 for strong portfolio",
-            "Get Job": "Focus Lane 1 RAG + Lane 4 Eval. Companies need accurate RAG",
-            "Build Startup": "Lane 2 → 3 → 5. Your app is Lane 2, add automation, then agents",
-            "Learn": "Master Lane 1 RAG deeply. Your Raga Finder is great start."
-        }
-        st.info(f"🤖 {plans[goal]}")
-        st.balloons()
+            st.success(f"**Lane {r['id']}: {r['name']}** ({r['score']:.0%} match)")
+            st.write(f"{r['desc']} | Skills: {r['skills']} | Money: {r['money']}")
 
-# TAB 2
+# TAB 2 - FINAL VERSION - NO PDF UPLOAD
 with tab2:
-    st.header("🎵 Raga Finder - Real RAG")
-    uploaded = st.file_uploader("Upload Raga PDF", type=["pdf"], key="raga")
-    if uploaded:
-        reader = PyPDF2.PdfReader(uploaded)
-        text = "".join([p.extract_text() or "" for p in reader.pages])
-        chunks = [text[i:i+500] for i in range(0, len(text), 400)]
-        st.success(f"PDF loaded: {len(chunks)} chunks created")
-        q2 = st.text_input("Ask about Raga (e.g., What is Yaman aroha?)", key="raga_q")
-        if q2 and chunks:
-            v = TfidfVectorizer().fit(chunks + [q2])
-            vecs = v.transform(chunks + [q2])
-            sims2 = cosine_similarity(vecs[-1], vecs[:-1])[0]
-            best_idx = sims2.argmax()
-            st.info(f"**Best Match ({sims2[best_idx]:.0%}):** {chunks[best_idx][:1000]}")
+    st.header("🎵 Raga Finder - Pure Meta AI")
+    st.info("No PDF needed. Meta AI (Llama 3.3) knows 100+ Hindustani Ragas.")
+    
+    raga_name = st.text_input("Enter Raga Name:", placeholder="e.g. Yaman, Bhairav, Todi, Darbari, Bhairavi", key="raga_name_final")
+    
+    instruction = st.selectbox("What details do you want?", 
+        ["Full Details: Aroha, Avaroha, Pakad, Thaat, Time, Vadi, Samvadi, Similar Ragas",
+         "Only Aroha Avaroha for practice",
+         "Beginner 2-line summary + mood",
+         "Compare with 2 similar ragas",
+         "Give bandish / composition idea + notation"],
+        key="raga_inst_final"
+    )
+    
+    if raga_name:
+        prompt = f"""
+You are Meta AI, a world-class Hindustani Classical Music Guru with 30 years of knowledge. You are accurate and authentic.
 
-# TAB 3 - NEW
+TASK: Provide details for Raga: {raga_name}
+INSTRUCTION: {instruction}
+
+STRICT FORMAT:
+**Raga:** {raga_name}
+**Thaat:** 
+**Prahar / Time:** 
+**Aroha:** 
+**Avaroha:** 
+**Pakad:** 
+**Vadi / Samvadi:** 
+**Jati:** 
+**Mood / Rasa:** 
+**Similar Ragas:** 
+**Bandish / Extra:** (as per instruction)
+
+RULES: Use proper Sargam (Sa Re Ga Ma Pa Dha Ni), correct wrong spellings, no hallucination.
+"""
+        if st.button(f"Get {raga_name} Details from Meta AI 🤖", key="get_raga_btn"):
+            with st.spinner(f"Meta AI is recalling {raga_name}..."):
+                answer, err = call_meta_ai(prompt)
+                if answer:
+                    st.success(f"Answer for {raga_name}")
+                    st.markdown(answer)
+                    safe = answer.replace("'", "").replace('"', "").replace("\n"," ")[:500]
+                    st.markdown(f"""<button onclick="var m=new SpeechSynthesisUtterance('{safe}');window.speechSynthesis.speak(m);">▶️ Hear Details</button>""", unsafe_allow_html=True)
+                else:
+                    st.error(err)
+
+# TAB 3
 with tab3:
-    st.header("🎙️ Voice Search - Lane 6")
-    st.write("This is Lane 6 Voice AI. Speak what you want to build, AI will find your lane + speak back.")
+    st.header("🎙️ Voice + Meta AI Career Guide")
+    st.write("Try: `make money while sleeping` or `Yaman raga` - Meta AI will answer and speak.")
+    q3 = st.text_input("Your Question:", placeholder="e.g. I want to make money while sleeping", key="voice_final")
+    inst3 = st.selectbox("Answer Style:", ["Career coach: give 3 steps to start", "Teacher: explain like I'm 10", "Investor: monetization potential"], key="inst3_final")
     
-    st.info("💡 Lesson: Voice AI = Speech to Text (Whisper) → Semantic Search (Tab 1) → Text to Speech (ElevenLabs). You are building same pipeline!")
-    
-    # Option 1: Record directly (works on phone)
-    audio = st.audio_input("Tap mic and say: I want to make money while sleeping")
-    
-    query_voice = st.text_input("Or type what you said:", placeholder="e.g. I want voice clone", key="voice_text")
-    
-    # If audio recorded, we show mock transcription (since Whisper needs API, we teach concept)
-    if audio:
-        st.audio(audio)
-        st.success("Audio captured! (In production, Whisper would transcribe this to text)")
-        if not query_voice:
-            query_voice = st.text_input("Whisper heard (type it for now):", key="voice_mock")
-    
-    if query_voice:
-        st.write(f"You said: **{query_voice}**")
-        results = semantic_search(query_voice, df_lanes.copy())
-        for _, r in results.iterrows():
-            st.success(f"🎙️ Voice Result → **Lane {r['id']}: {r['name']}** ({r['score']:.0%}) - {r['desc']}")
-        
-        st.subheader("🔊 AI would now speak this answer (Text to Speech)")
-        st.caption("In production: Use ElevenLabs API or gTTS to convert this text to voice. For now, your browser can read it.")
-        
-        # Simple browser TTS using HTML
-        tts_text = f"For your goal {query_voice}, I recommend Lane {results.iloc[0]['id']} {results.iloc[0]['name']}. {results.iloc[0]['desc']}"
-        st.markdown(f"""
-        <button onclick="var msg = new SpeechSynthesisUtterance('{tts_text}'); window.speechSynthesis.speak(msg);">▶️ Click to Hear AI Speak Answer</button>
-        """, unsafe_allow_html=True)
+    if q3:
+        results = semantic_search(q3, df_lanes.copy())
+        context = f"Best matching Lane is {results.iloc[0]['name']}: {results.iloc[0]['desc']}"
+        prompt3 = f"""
+You are Meta AI, AI Career Guide and Raga Guru.
+CONTEXT: {context}
+USER QUESTION: {q3}
+INSTRUCTION: {inst3}
+If question is about raga, give Aroha Avaroha. If about career, map to Lane and give 3 actionable steps. Be concise.
+"""
+        if st.button("Ask Meta AI + Speak 🔊", key="voice_btn"):
+            with st.spinner("Calling Meta AI..."):
+                ans, err = call_meta_ai(prompt3)
+                if ans:
+                    st.success(ans)
+                    safe = ans.replace("'", "").replace('"', "").replace("\n"," ")[:500]
+                    st.markdown(f"""<button onclick="var m=new SpeechSynthesisUtterance('{safe}');window.speechSynthesis.speak(m);">▶️ Hear Meta AI</button>""", unsafe_allow_html=True)
+                else:
+                    st.error(err)
