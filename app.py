@@ -1,111 +1,70 @@
 import streamlit as st
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-st.set_page_config(page_title="8 Lanes incl Agentic AI", layout="wide")
-st.title("🛣️ 8 AI Lanes = 7 Practical + Agentic AI")
-st.caption("Search-proof like Kalashri/Kalashree: type 'agent', 'rag', 'lora', 'automate'")
+st.set_page_config(page_title="8 Lanes - Real AI", layout="wide")
 
-LANES = {
-    "rag": {
-        "title": "1. RAG / Knowledge Assistants",
-        "variants": ["rag", "knowledge", "chat docs", "pdf", "youtube", "langchain", "vector"],
-        "hook": "Chat over your docs, ragas, PDFs, YouTube transcripts. LangChain + vector DB.",
-        "stack": ["LangChain, Chroma/Pinecone", "Embeddings"],
-        "projects": ["Raga Finder", "PDF Bandish Q&A"],
-        "demand": "🔥 Very High", "money": "High", "learn": "3-4w", "badge": "YOU ARE HERE"
-    },
-    "ai apps": {
-        "title": "2. AI Apps / Wrappers",
-        "variants": ["wrappers", "ai apps", "summarizer", "translator", "streamlit", "next.js"],
-        "hook": "Not agents — just smart UI: summarizers, translators, music recommenders, meditation timers with AI picks. Ship fast.",
-        "stack": ["Streamlit / Next.js", "OpenAI API"],
-        "projects": ["Meditation Timer + AI Raga", "Raga → Playlist"],
-        "demand": "🔥 Highest Ship", "money": "Fastest $$", "learn": "2-3w", "badge": "RECOMMENDED NEXT"
-    },
-    "fine-tuning": {
-        "title": "3. Fine-tuning / LoRA",
-        "variants": ["fine-tuning", "finetuning", "lora", "hugging face", "alaap"],
-        "hook": "Teach small model your style — e.g. model that writes alaap descriptions, or classifies ragas. Free on HF.",
-        "stack": ["Hugging Face", "LoRA, Unsloth, Ollama"],
-        "projects": ["Raga Classifier", "Alaap Generator"],
-        "demand": "🔥 Specialist", "money": "Specialist pay", "learn": "4-5w", "badge": ""
-    },
-    "automation": {
-        "title": "4. Automation (No Agents Needed)",
-        "variants": ["automation", "n8n", "zapier", "make", "transcribe", "tag"],
-        "hook": "n8n, Zapier, Make + AI: auto-transcribe concerts, tag ragas, build playlists. Less hype, more money.",
-        "stack": ["n8n (free)", "Zapier/Make", "Whisper"],
-        "projects": ["Auto-Transcribe → Notion", "Auto Playlist Builder"],
-        "demand": "💰 Most $$", "money": "SMEs pay cash", "learn": "1-2w", "badge": "FAST MONEY"
-    },
-    "eval": {
-        "title": "5. Eval / Guardrails / Prompt Eng",
-        "variants": ["eval", "guardrails", "prompt", "testing", "reliability"],
-        "hook": "Companies pay for people who can test and make models reliable. No building, just breaking well.",
-        "stack": ["LangSmith, Promptfoo", "Guardrails AI"],
-        "projects": ["Raga Finder Eval Suite", "Hallucination Tests"],
-        "demand": "🔥 Secret Goldmine", "money": "$100k+ roles", "learn": "2w", "badge": "UNDER-RATED"
-    },
-    "multimodal": {
-        "title": "6. Multimodal",
-        "variants": ["multimodal", "image", "audio", "voice", "whisper", "diffusion", "mood"],
-        "hook": "Image, audio, voice: raga → mood → image, or voice clone for meditation. Whisper + SD free.",
-        "stack": ["Whisper, Stable Diffusion", "ElevenLabs"],
-        "projects": ["Raga → AI Painting", "Voice Meditation"],
-        "demand": "🔥 Growing", "money": "Creative premium", "learn": "3-4w", "badge": ""
-    },
-    "traditional ml": {
-        "title": "7. Traditional ML / Data",
-        "variants": ["traditional ml", "ml", "data", "forecasting", "classification", "analytics"],
-        "hook": "Forecasting, classification, analytics — still 70% of real jobs, less competition than agents.",
-        "stack": ["Pandas, Scikit-Learn, XGBoost", "SQL"],
-        "projects": ["Concert Forecasting", "Raga Analytics"],
-        "demand": "📊 70% jobs", "money": "Stable jobs", "learn": "4-6w", "badge": "STABLE"
-    },
-    "agentic ai": {
-        "title": "8. Agentic AI (PLUS - The Future)",
-        "variants": ["agentic", "agents", "agentic ai", "autonomous", "langgraph", "autogen", "crewai", "mcp"],
-        "hook": "Autonomous agents that use tools, plan, remember — built ON TOP of lanes 1-7. Don't start here.",
-        "stack": ["LangGraph", "AutoGen, CrewAI", "OpenAI Agents SDK, MCP, Tool Use"],
-        "projects": ["Raga Research Agent (searches + writes)", "Concert Booking Agent", "Multi-Agent Bandish Studio"],
-        "demand": "🚀 Future / Hype", "money": "High but needs Lanes 1-7", "learn": "6w+", "badge": "DO LAST"
-    }
+st.title("🧠 8 AI Lanes - Now With REAL AI")
+st.caption("Semantic Search + AI Advisor")
+
+# --- DATA ---
+lanes = [
+    {"id":1, "name":"RAG", "desc":"Build knowledge base from PDFs, search with embeddings, answer with LLM. Your Raga Finder.", "skills":"Vector DB, Embeddings, Chunking", "money":"Low", "diff":"Medium"},
+    {"id":2, "name":"AI Apps Wrapper", "desc":"Wrap LLMs into useful tools like resume scanner, dashboard, your 8 lanes app.", "skills":"Streamlit, API, Prompting", "money":"Medium", "diff":"Low"},
+    {"id":3, "name":"Automation", "desc":"Automate emails, leads, reports using AI agents that work while you sleep.", "skills":"Make, n8n, LangChain", "money":"High", "diff":"Medium"},
+    {"id":4, "name":"Evaluation", "desc":"Test if your AI is actually good, measure accuracy, prevent hallucinations.", "skills":"RAGAS, Human eval", "money":"High", "diff":"High"},
+    {"id":5, "name":"Agentic AI", "desc":"AI agents that plan, use tools, browse, and complete complex tasks autonomously.", "skills":"CrewAI, AutoGen, Tools", "money":"Very High", "diff":"Very High"},
+    {"id":6, "name":"Voice & Video", "desc":"Voice assistants, video generation, avatars for content and calls.", "skills":"Whisper, ElevenLabs", "money":"High", "diff":"Medium"},
+    {"id":7, "name":"Fine-tuning", "desc":"Train your own small model on your own data for specific domain.", "skills":"LoRA, QLoRA", "money":"Medium", "diff":"Very High"},
+    {"id":8, "name":"AI Products", "desc":"Full SaaS product with users, payments, and scaling to $10k MRR.", "skills":"Product, Growth", "money":"Very High", "diff":"High"},
+]
+df = pd.DataFrame(lanes)
+df['text'] = df['name'] + " " + df['desc'] + " " + df['skills']
+
+# --- REAL AI 1: SEMANTIC SEARCH ---
+st.header("1. Semantic Search (Real AI, not keywords)")
+st.write("Try: 'I want to make money while sleeping' or 'help me build voice clone'")
+
+query = st.text_input("What do you want to build?")
+
+if query:
+    vectorizer = TfidfVectorizer().fit(df['text'].tolist() + [query])
+    vectors = vectorizer.transform(df['text'].tolist() + [query])
+    sims = cosine_similarity(vectors[-1], vectors[:-1])[0]
+    df['score'] = sims
+    results = df.sort_values('score', ascending=False).head(3)
+    
+    st.subheader(f"AI found {len(results)} best lanes for you:")
+    for _, r in results.iterrows():
+        st.success(f"**Lane {r['id']}: {r['name']}** (match: {r['score']:.0%}) - {r['desc']}")
+else:
+    st.dataframe(df[['id','name','desc','money','diff']], use_container_width=True)
+
+# --- REAL AI 2: AI ADVISOR ---
+st.header("2. AI Advisor (Rule-based Agent)")
+goal = st.selectbox("Your current goal?", ["Learn", "Make Money Fast", "Build Portfolio", "Get Job", "Build Startup"])
+
+def advise(goal):
+    if goal == "Make Money Fast": return "Start Lane 3 Automation → Find 5 businesses, automate their cold emails with AI. Charge $500/mo. That's Lane 3. Then add Lane 4 Eval to show ROI."
+    if goal == "Build Portfolio": return "You did Lane 1 & 2. Now build Lane 3 (small automation) + Lane 6 (voice demo). 4 projects = strong portfolio."
+    if goal == "Get Job": return "Focus Lane 1 RAG + Lane 4 Evaluation. Companies pay for accurate RAG, not demos. Build eval metrics."
+    if goal == "Build Startup": return "Lane 2 → 3 → 5. Your 8 lanes app is Lane 2. Now add automation (Lane 3) for users, then agents (Lane 5)."
+    return "Master Lane 1 RAG deeply. Your Raga Finder is great start. Add 100 more PDFs, improve embeddings."
+
+if st.button("Get My AI Plan"):
+    st.info(f"🤖 Advisor: {advise(goal)}")
+    st.balloons()
+
+# --- ROADMAP ---
+st.header("3. Roadmap")
+st.graphviz_chart("""
+digraph {
+ rankdir=LR;
+ RAG -> AI_Apps -> Automation -> Eval -> Agentic -> Voice -> Finetune -> Products;
 }
+""")
 
-def find_lane(q):
-    q=q.lower()
-    for v in LANES.values():
-        if any(vv in q for vv in v["variants"]): return v
-    return None
-
-st.sidebar.header("Jump to Lane")
-for k,v in LANES.items():
-    if st.sidebar.button(v["title"], key=k):
-        st.session_state['active']=k
-
-q = st.text_input("🔍 Search", placeholder="type rag, agent, automate, voice, lora...")
-active = None
-if q:
-    active=find_lane(q)
-    if active: st.success(f"Found → {active['title']}")
-if 'active' in st.session_state:
-    active=LANES[st.session_state['active']]
-
-lanes = [active] if active else list(LANES.values())
-
-for lane in lanes:
-    with st.container(border=True):
-        c1,c2,c3 = st.columns([3,1,1])
-        with c1:
-            st.subheader(f"{lane['title']}  {lane['badge']}")
-            st.write(f"**{lane['hook']}**")
-            st.caption(f"Stack: {', '.join(lane['stack'])} | Projects: {', '.join(lane['projects'])}")
-        with c2:
-            st.metric("Demand", lane["demand"])
-            st.metric("Learn", lane["learn"])
-        with c3:
-            st.metric("Money", lane["money"])
-            if lane["title"].startswith("8"):
-                st.warning("Build after Lanes 1-5")
-
-st.divider()
-st.info("Gaurang's Path: 1 (Done ✅ Raga Finder) → 2 + 4 for $$ → 5 for reliability → 8 Agentic AI. You already nailed the hardest part!")
+st.markdown("---")
+st.write("Lesson: Your old app showed the map. This app *understands* what you want using TF-IDF vectors + cosine similarity — that's the core of semantic search / RAG!")
