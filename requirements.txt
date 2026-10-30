@@ -2,4 +2,4 @@ streamlit
 pandas
 scikit-learn
 numpy
-requests
+PyPDF2
